@@ -226,8 +226,10 @@ def create_pdf(place, img_data, base_url):
 def download_pdf(filename):
     return send_file(filename, as_attachment=True)
 
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))  # Utilise le port fourni par la plateforme ou 5000 par défaut
+    app.run(host='0.0.0.0', port=port, debug=True)
 
 # from flask import Flask, render_template, request, redirect, send_file
 # import qrcode
