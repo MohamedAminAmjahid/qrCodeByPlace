@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de QR Codes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Barre de navigation avec les liens vers les différentes pages -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">QR Code Generator</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/statistics">Statistiques basiques</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dynamic_stats">Statistiques dynamiques</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="text-center mb-4">
+            <!-- Afficher le logo en haut de la page -->
+            <img src="/static/digital_logo_endossement_rvb_transparent.png" alt="Logo Université d'Évry" style="width: 150px;">
+        </div>
+        <h1 class="text-center mb-4">Générateur de QR Codes</h1>
+        <form action="/" method="post">
+            <div class="mb-3">
+                <label for="base_url" class="form-label">Entrez le lien de base :</label>
+                <input type="text" id="base_url" name="base_url" class="form-control" placeholder="https://example.com" required>
+            </div>
+            <div class="mb-3">
+                <label for="places" class="form-label">Entrez les lieux (un par ligne) :</label>
+                <textarea id="places" name="places" rows="5" class="form-control" placeholder="Paris&#10;Lyon&#10;Marseille" required></textarea>
+            </div>
+            <!-- Nouvelle option pour utiliser les couleurs par défaut -->
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="use_default_colors" name="use_default_colors">
+                <label class="form-check-label" for="use_default_colors">Utiliser les couleurs par défaut de l'Université d'Évry</label>
+            </div>
+            <!-- Sélection des couleurs personnalisées -->
+            <div class="mb-3">
+                <label for="fill_color" class="form-label">Couleur des motifs du QR code :</label>
+                <input type="color" id="fill_color" name="fill_color" class="form-control" value="#000000">
+            </div>
+            <div class="mb-3">
+                <label for="back_color" class="form-label">Couleur de fond du QR code :</label>
+                <input type="color" id="back_color" name="back_color" class="form-control" value="#ffffff">
+            </div>
+            <div class="mb-3">
+                <label for="size" class="form-label">Choisissez la taille du QR code :</label>
+                <select id="size" name="size" class="form-control">
+                    <option value="200">200 x 200</option>
+                    <option value="300">300 x 300</option>
+                    <option value="400">400 x 400</option>
+                </select>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary btn-lg">Générer les QR Codes</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques dynamiques</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body><!-- Barre de navigation avec les liens vers les différentes pages -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">QR Code Generator</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/statistics">Statistiques basiques</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dynamic_stats">Statistiques dynamiques</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Statistiques dynamiques</h1>
+
+        <form method="post">
+            <div class="row">
+                <!-- Checkbox pour les lieux -->
+                <div class="col-md-4">
+                    <label for="places">Sélectionnez les lieux :</label><br>
+                    {% for place in all_places %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="places" value="{{ place }}" id="place_{{ place }}"
+                        {% if place in selected_places %} checked {% endif %}>
+                        <label class="form-check-label" for="place_{{ place }}">
+                            {{ place }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Checkbox pour les sites web -->
+                <div class="col-md-4">
+                    <label for="websites">Sélectionnez les sites web :</label><br>
+                    {% for website in all_websites %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="websites" value="{{ website }}" id="website_{{ website }}"
+                        {% if website in selected_websites %} checked {% endif %}>
+                        <label class="form-check-label" for="website_{{ website }}">
+                            {{ website }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Sélection de la plage de dates -->
+                <div class="col-md-4">
+                    <label for="start_date">Date de début :</label>
+                    <input type="date" id="start_date" name="start_date" class="form-control" value="{{ start_date }}">
+                    <label for="end_date" class="mt-3">Date de fin :</label>
+                    <input type="date" id="end_date" name="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary">Appliquer les filtres</button>
+            </div>
+        </form>
+
+        <!-- Afficher le graphique dynamique sous forme de courbe -->
+        <div class="mt-5">
+            {{ graph_html | safe }}
+        </div>
+
+        <!-- Afficher le tableau avec les données filtrées -->
+        <div class="mt-5">
+            <h3>Tableau des données filtrées</h3>
+            <div class="table-responsive">
+                {{ table_html | safe }}
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary btn-lg">Retour</a>
+        </div>
+    </div>
+</body>
+</html>
