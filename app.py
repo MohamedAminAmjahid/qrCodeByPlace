@@ -162,37 +162,42 @@ def generate_qr_code(data, fill_color, back_color, size):
 # Générer les graphiques statiques
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    if request.method == 'POST':
-        redirect_url = request.form['base_url']
-        places = request.form['places'].splitlines()
+    try:
+        if request.method == 'POST':
+            redirect_url = request.form['base_url']
+            places = request.form['places'].splitlines()
 
-        use_default_colors = 'use_default_colors' in request.form
-        if use_default_colors:
-            fill_color = "#30B4CD"
-            back_color = "#FEB30E"
-        else:
-            fill_color = request.form['fill_color']
-            back_color = request.form['back_color']
+            use_default_colors = 'use_default_colors' in request.form
+            if use_default_colors:
+                fill_color = "#30B4CD"
+                back_color = "#FEB30E"
+            else:
+                fill_color = request.form['fill_color']
+                back_color = request.form['back_color']
 
-        size = int(request.form['size'])
+            size = int(request.form['size'])
 
-        qr_codes = []
-        for place in places:
-            # full_url = f"http://127.0.0.1:5000/tracker?place={place.strip()}&redirect={redirect_url}"
-            full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
+            qr_codes = []
+            for place in places:
+                # full_url = f"http://127.0.0.1:5000/tracker?place={place.strip()}&redirect={redirect_url}"
+                full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
 
-            img = generate_qr_code(full_url, fill_color, back_color, size)
+                img = generate_qr_code(full_url, fill_color, back_color, size)
 
-            img_io = BytesIO()
-            img.save(img_io, 'PNG')
-            img_io.seek(0)
+                img_io = BytesIO()
+                img.save(img_io, 'PNG')
+                img_io.seek(0)
 
-            img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
-            qr_codes.append((place, img_base64))
+                img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+                qr_codes.append((place, img_base64))
 
-        return render_template('qr_codes.html', qr_codes=qr_codes)
+            return render_template('qr_codes.html', qr_codes=qr_codes)
 
-    return render_template('index.html')
+        return render_template('index.html')
+    except Exception as e:
+        # Afficher l'erreur dans les logs
+        print(f"Une erreur est survenue : {str(e)}")
+        return f"Une erreur est survenue : {str(e)}", 500
 
 # Page des graphiques dynamiques (HTML)
 @app.route('/tracker', methods=['GET'])
