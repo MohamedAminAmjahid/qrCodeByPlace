@@ -57,47 +57,6 @@ def statistics():
     plot_scans_per_hour(scans_per_hour)
     return render_template('statistics.html')
 
-
-# @app.route('/dynamic_line_chart', methods=['GET', 'POST'])
-# def dynamic_line_chart():
-#     df = load_log_data()
-
-#     # Liste complète des lieux et des sites web
-#     all_places = df['Place'].unique()
-#     all_websites = df['Website'].unique()
-
-#     # Initialiser les valeurs sélectionnées par défaut
-#     selected_places = []
-#     selected_websites = []
-#     start_date = None
-#     end_date = None
-
-#     if request.method == 'POST':
-#         # Récupérer les valeurs des filtres
-#         selected_places = request.form.getlist('places')
-#         selected_websites = request.form.getlist('websites')
-#         start_date = request.form.get('start_date')
-#         end_date = request.form.get('end_date')
-
-#         # Appliquer les filtres aux données
-#         if selected_places:
-#             df = df[df['Place'].isin(selected_places)]
-#         if selected_websites:
-#             df = df[df['Website'].isin(selected_websites)]
-#         if start_date and end_date:
-#             df = df[(df['Scan Time'] >= start_date) & (df['Scan Time'] <= end_date)]
-
-#     # Créer un graphique de courbe en fonction du temps (ou d'une autre métrique)
-#     fig = px.line(df, x='Scan Time', y='Place', color='Website', title='Scans filtrés par lieu et site web')
-
-#     # Générer le HTML du graphique Plotly
-#     graph_html = pio.to_html(fig, full_html=False)
-
-#     return render_template('dynamic_statistics.html', graph_html=graph_html,
-#                            all_places=all_places, all_websites=all_websites,
-#                            selected_places=selected_places, selected_websites=selected_websites,
-#                            start_date=start_date, end_date=end_date)
-
 # Fonction pour enregistrer les données dans un fichier CSV
 def log_scan(place, ip_address, scan_time, web_site):
     with open('scans_log.csv', mode='a', newline='') as file:
@@ -179,7 +138,6 @@ def index():
 
             qr_codes = []
             for place in places:
-                # full_url = f"http://127.0.0.1:5000/tracker?place={place.strip()}&redirect={redirect_url}"
                 full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
 
                 img = generate_qr_code(full_url, fill_color, back_color, size)
@@ -189,17 +147,21 @@ def index():
                 img_io.seek(0)
 
                 img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
-                qr_codes.append((place, img_base64))
+
+                # Créer le PDF
+                pdf_filename = create_pdf(place.strip(), img_base64, full_url)
+
+                # Ajouter le QR code et le fichier PDF
+                qr_codes.append((place, img_base64, pdf_filename))
 
             return render_template('qr_codes.html', qr_codes=qr_codes)
 
         return render_template('index.html')
     except Exception as e:
-        # Afficher l'erreur dans les logs
         print(f"Une erreur est survenue : {str(e)}")
         return f"Une erreur est survenue : {str(e)}", 500
 
-# Page des graphiques dynamiques (HTML)
+# Route pour capturer les scans des QR codes
 @app.route('/tracker', methods=['GET'])
 def tracker():
     place = request.args.get('place')
@@ -233,8 +195,246 @@ def download_pdf(filename):
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Utilise le port fourni par la plateforme ou 5000 par défaut
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
+# from flask import Flask, render_template, request, redirect, send_file
+# import qrcode
+# from io import BytesIO
+# import base64
+# import datetime
+# import csv
+# from fpdf import FPDF
+# import os
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# import plotly.express as px
+# import plotly.io as pio
+
+# app = Flask(__name__)
+
+# # Charger les logs du fichier CSV
+# def load_log_data():
+#     df = pd.read_csv('scans_log.csv', names=['Place', 'IP Address', 'Scan Time', 'Website'])
+#     df['Scan Time'] = pd.to_datetime(df['Scan Time'])
+#     return df
+
+# # Analyser les données
+# def analyze_data(df):
+#     scans_per_place = df['Place'].value_counts()
+#     scans_per_hour = df.set_index('Scan Time').resample('H').size()
+#     scans_per_ip = df['IP Address'].value_counts()
+#     return scans_per_place, scans_per_hour, scans_per_ip
+
+# # Créer des graphiques basiques avec Matplotlib
+# def plot_scans_per_place(scans_per_place):
+#     plt.figure(figsize=(10, 6))
+#     scans_per_place.plot(kind='bar', color='skyblue')
+#     plt.title('Nombre de scans par lieu')
+#     plt.xlabel('Lieu')
+#     plt.ylabel('Nombre de scans')
+#     plt.xticks(rotation=45)
+#     plt.tight_layout()
+#     plt.savefig('static/scans_per_place.png')
+#     plt.close()
+
+# def plot_scans_per_hour(scans_per_hour):
+#     plt.figure(figsize=(10, 6))
+#     scans_per_hour.plot(kind='line', color='orange')
+#     plt.title('Distribution des scans dans le temps (par heure)')
+#     plt.xlabel('Heure')
+#     plt.ylabel('Nombre de scans')
+#     plt.tight_layout()
+#     plt.savefig('static/scans_per_hour.png')
+#     plt.close()
+
+# # Route pour afficher les statistiques avec les graphiques statiques
+# @app.route('/statistics')
+# def statistics():
+#     df = load_log_data()
+#     scans_per_place, scans_per_hour, scans_per_ip = analyze_data(df)
+#     plot_scans_per_place(scans_per_place)
+#     plot_scans_per_hour(scans_per_hour)
+#     return render_template('statistics.html')
+
+
+# # @app.route('/dynamic_line_chart', methods=['GET', 'POST'])
+# # def dynamic_line_chart():
+# #     df = load_log_data()
+
+# #     # Liste complète des lieux et des sites web
+# #     all_places = df['Place'].unique()
+# #     all_websites = df['Website'].unique()
+
+# #     # Initialiser les valeurs sélectionnées par défaut
+# #     selected_places = []
+# #     selected_websites = []
+# #     start_date = None
+# #     end_date = None
+
+# #     if request.method == 'POST':
+# #         # Récupérer les valeurs des filtres
+# #         selected_places = request.form.getlist('places')
+# #         selected_websites = request.form.getlist('websites')
+# #         start_date = request.form.get('start_date')
+# #         end_date = request.form.get('end_date')
+
+# #         # Appliquer les filtres aux données
+# #         if selected_places:
+# #             df = df[df['Place'].isin(selected_places)]
+# #         if selected_websites:
+# #             df = df[df['Website'].isin(selected_websites)]
+# #         if start_date and end_date:
+# #             df = df[(df['Scan Time'] >= start_date) & (df['Scan Time'] <= end_date)]
+
+# #     # Créer un graphique de courbe en fonction du temps (ou d'une autre métrique)
+# #     fig = px.line(df, x='Scan Time', y='Place', color='Website', title='Scans filtrés par lieu et site web')
+
+# #     # Générer le HTML du graphique Plotly
+# #     graph_html = pio.to_html(fig, full_html=False)
+
+# #     return render_template('dynamic_statistics.html', graph_html=graph_html,
+# #                            all_places=all_places, all_websites=all_websites,
+# #                            selected_places=selected_places, selected_websites=selected_websites,
+# #                            start_date=start_date, end_date=end_date)
+
+# # Fonction pour enregistrer les données dans un fichier CSV
+# def log_scan(place, ip_address, scan_time, web_site):
+#     with open('scans_log.csv', mode='a', newline='') as file:
+#         writer = csv.writer(file)
+#         writer.writerow([place, ip_address, scan_time, web_site])
+
+# @app.route('/dynamic_stats', methods=['GET', 'POST'])
+# def dynamic_stats():
+#     df = load_log_data()
+
+#     # Liste complète des lieux et des sites web
+#     all_places = df['Place'].unique()
+#     all_websites = df['Website'].unique()
+
+#     # Initialiser les valeurs sélectionnées par défaut
+#     selected_places = []
+#     selected_websites = []
+#     start_date = None
+#     end_date = None
+
+#     if request.method == 'POST':
+#         # Récupérer les valeurs des filtres
+#         selected_places = request.form.getlist('places')
+#         selected_websites = request.form.getlist('websites')
+#         start_date = request.form.get('start_date')
+#         end_date = request.form.get('end_date')
+
+#         # Appliquer les filtres aux données
+#         if selected_places:
+#             df = df[df['Place'].isin(selected_places)]
+#         if selected_websites:
+#             df = df[df['Website'].isin(selected_websites)]
+#         if start_date and end_date:
+#             df = df[(df['Scan Time'] >= start_date) & (df['Scan Time'] <= end_date)]
+
+#     # Créer un graphique de courbe (line chart) avec Plotly
+#     fig = px.line(df, x='Scan Time', y='Place', color='Website', title='Scans filtrés par lieu et site web')
+#     graph_html = pio.to_html(fig, full_html=False)
+
+#     # Créer un tableau HTML à partir des données filtrées
+#     table_html = df.to_html(classes='table table-striped table-bordered', index=False)
+
+#     return render_template('dynamic_statistics.html', graph_html=graph_html,
+#                            table_html=table_html,
+#                            all_places=all_places, all_websites=all_websites,
+#                            selected_places=selected_places, selected_websites=selected_websites,
+#                            start_date=start_date, end_date=end_date)
+
+# # Fonction pour générer un QR code avec des couleurs personnalisées
+# def generate_qr_code(data, fill_color, back_color, size):
+#     qr = qrcode.QRCode(
+#         version=1,
+#         error_correction=qrcode.constants.ERROR_CORRECT_L,
+#         box_size=size // 40,
+#         border=4,
+#     )
+#     qr.add_data(data)
+#     qr.make(fit=True)
+#     img = qr.make_image(fill_color=fill_color, back_color=back_color).resize((size, size))
+#     return img
+
+# # Générer les graphiques statiques
+# @app.route('/', methods=['GET', 'POST'])
+# def index():
+#     try:
+#         if request.method == 'POST':
+#             redirect_url = request.form['base_url']
+#             places = request.form['places'].splitlines()
+
+#             use_default_colors = 'use_default_colors' in request.form
+#             if use_default_colors:
+#                 fill_color = "#30B4CD"
+#                 back_color = "#FEB30E"
+#             else:
+#                 fill_color = request.form['fill_color']
+#                 back_color = request.form['back_color']
+
+#             size = int(request.form['size'])
+
+#             qr_codes = []
+#             for place in places:
+#                 # full_url = f"http://127.0.0.1:5000/tracker?place={place.strip()}&redirect={redirect_url}"
+#                 full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
+
+#                 img = generate_qr_code(full_url, fill_color, back_color, size)
+
+#                 img_io = BytesIO()
+#                 img.save(img_io, 'PNG')
+#                 img_io.seek(0)
+
+#                 img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+#                 qr_codes.append((place, img_base64))
+
+#             return render_template('qr_codes.html', qr_codes=qr_codes)
+
+#         return render_template('index.html')
+#     except Exception as e:
+#         # Afficher l'erreur dans les logs
+#         print(f"Une erreur est survenue : {str(e)}")
+#         return f"Une erreur est survenue : {str(e)}", 500
+
+# # Page des graphiques dynamiques (HTML)
+# @app.route('/tracker', methods=['GET'])
+# def tracker():
+#     place = request.args.get('place')
+#     ip_address = request.remote_addr
+#     scan_time = datetime.datetime.now()
+#     redirect_url = request.args.get('redirect')
+#     log_scan(place, ip_address, scan_time, redirect_url)
+#     return redirect("http://" + redirect_url, code=302)
+
+# # Fonction pour créer un PDF
+# def create_pdf(place, img_data, base_url):
+#     pdf = FPDF()
+#     pdf.add_page()
+#     pdf.set_font("Arial", size=12)
+#     pdf.cell(200, 10, txt=f"QR Code pour le lieu: {place}", ln=True, align="C")
+#     img_path = f"temp_{place}.png"
+#     with open(img_path, "wb") as img_file:
+#         img_file.write(base64.b64decode(img_data))
+#     pdf.image(img_path, x=(210-100)/2, y=30, w=100, h=100)
+#     pdf.ln(100)
+#     pdf.cell(200, 10, txt=f"Lien associé: {base_url}", ln=True, align="C")
+#     pdf_filename = f"qr_code_{place}.pdf"
+#     pdf.output(pdf_filename)
+#     os.remove(img_path)
+#     return pdf_filename
+
+# # Route pour télécharger un PDF
+# @app.route('/download/<filename>')
+# def download_pdf(filename):
+#     return send_file(filename, as_attachment=True)
+
+
+# if __name__ == '__main__':
+#     port = int(os.environ.get('PORT', 5000))  # Utilise le port fourni par la plateforme ou 5000 par défaut
+#     app.run(host='0.0.0.0', port=port, debug=True)
 
 # from flask import Flask, render_template, request, redirect, send_file
 # import qrcode

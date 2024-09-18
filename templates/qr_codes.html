@@ -9,7 +9,8 @@
     <!-- Lien vers Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 </head>
-<body><!-- Barre de navigation avec les liens vers les différentes pages -->
+<body>
+    <!-- Barre de navigation avec les liens vers les différentes pages -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">QR Code Generator</a>
@@ -31,13 +32,13 @@
             </div>
         </div>
     </nav>
+
     <div class="container mt-5">
         <h1 class="text-center mb-4">QR Codes générés</h1>
 
         <!-- Grille pour afficher les QR codes -->
         <div class="row">
-            {% for place, img_base64 in qr_codes %}
-
+            {% for place, img_base64, pdf_file in qr_codes %}
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
                     <div class="card-body text-center">
