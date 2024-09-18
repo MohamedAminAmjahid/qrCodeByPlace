@@ -36,7 +36,8 @@
 
         <!-- Grille pour afficher les QR codes -->
         <div class="row">
-            {% for place, img_base64, pdf_file in qr_codes %}
+            {% for place, img_base64 in qr_codes %}
+
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
                     <div class="card-body text-center">
