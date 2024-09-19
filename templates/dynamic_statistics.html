@@ -24,6 +24,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/dynamic_stats">Statistiques dynamiques</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/recap">Tableau Récapitulatif</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -77,20 +80,68 @@
 
         <!-- Afficher le graphique dynamique sous forme de courbe -->
         <div class="mt-5">
-            {{ graph_html | safe }}
+
+           </div>
+               <!-- Bouton pour télécharger le graphique -->
+                <div class="text-center mt-4">
+                    <button id="download-chart" class="btn btn-success">Télécharger le graphique</button>
+                </div>
+            <div id="graph-container">
+                {{ graph_html | safe }}
+            </div>
+
         </div>
 
-        <!-- Afficher le tableau avec les données filtrées -->
         <div class="mt-5">
+
+            <!-- Formulaire pour télécharger CSV -->
+            <form action="/download_filtered_csv" method="post" style="display: inline;">
+                {% for place in selected_places %}
+                <input type="hidden" name="places" value="{{ place }}">
+                {% endfor %}
+                {% for website in selected_websites %}
+                <input type="hidden" name="websites" value="{{ website }}">
+                {% endfor %}
+                <button type="submit" class="btn btn-success">Télécharger CSV</button>
+            </form>
+
+            <!-- Formulaire pour télécharger Excel -->
+            <form action="/download_filtered_excel" method="post" style="display: inline;">
+                {% for place in selected_places %}
+                <input type="hidden" name="places" value="{{ place }}">
+                {% endfor %}
+                {% for website in selected_websites %}
+                <input type="hidden" name="websites" value="{{ website }}">
+                {% endfor %}
+                <button type="submit" class="btn btn-success">Télécharger Excel</button>
+            </form>
+
             <h3>Tableau des données filtrées</h3>
             <div class="table-responsive">
                 {{ table_html | safe }}
             </div>
         </div>
 
+
+
         <div class="text-center mt-4">
             <a href="/" class="btn btn-secondary btn-lg">Retour</a>
         </div>
     </div>
+
+    <!-- JavaScript pour gérer le téléchargement du graphique -->
+    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist/plotly.min.js"></script>
+    <script>
+        document.getElementById('download-chart').addEventListener('click', function() {
+            // Télécharger le graphique en tant qu'image PNG
+            Plotly.downloadImage(document.getElementsByClassName('js-plotly-plot')[0], {
+                format: 'png',
+                filename: 'statistiques_dynamiques'
+            });
+        });
+    </script>
+
+    <!-- Lien vers Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

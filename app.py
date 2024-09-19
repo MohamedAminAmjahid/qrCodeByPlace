@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, send_file
+from flask import Flask, render_template, request, redirect, send_file,  make_response
+import io
 import qrcode
 from io import BytesIO
 import base64
@@ -12,6 +13,59 @@ import plotly.express as px
 import plotly.io as pio
 
 app = Flask(__name__)
+
+from datetime import datetime
+
+@app.route('/download_filtered_csv', methods=['POST'])
+def download_filtered_csv():
+    df = load_log_data()
+
+    # Appliquer les filtres pour les lieux, les sites web, et les dates
+    selected_places = request.form.getlist('places')
+    selected_websites = request.form.getlist('websites')
+
+    if selected_places:
+        df = df[df['Place'].isin(selected_places)]
+    if selected_websites:
+        df = df[df['Website'].isin(selected_websites)]
+
+    # Sélectionner uniquement les colonnes "Website", "Scan Time", "Place"
+    df_filtered = df[['Website', 'Scan Time', 'Place']]
+
+    # Générer le CSV
+    response = make_response(df_filtered.to_csv(index=False))
+    response.headers["Content-Disposition"] = "attachment; filename=tableau_filtre.csv"
+    response.headers["Content-Type"] = "text/csv"
+    
+    return response
+
+@app.route('/download_filtered_excel', methods=['POST'])
+def download_filtered_excel():
+    df = load_log_data()
+
+    # Appliquer les filtres pour les lieux et les sites web
+    selected_places = request.form.getlist('places')
+    selected_websites = request.form.getlist('websites')
+
+    if selected_places:
+        df = df[df['Place'].isin(selected_places)]
+    if selected_websites:
+        df = df[df['Website'].isin(selected_websites)]
+
+    # Sélectionner uniquement les colonnes "Website", "Scan Time", "Place"
+    df_filtered = df[['Website', 'Scan Time', 'Place']]
+
+    # Créer le fichier Excel
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df_filtered.to_excel(writer, index=False)
+
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=tableau_filtre.xlsx"
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    
+    return response
 
 # Charger les logs du fichier CSV
 def load_log_data():
@@ -48,20 +102,124 @@ def plot_scans_per_hour(scans_per_hour):
     plt.savefig('static/scans_per_hour.png')
     plt.close()
 
-# Route pour afficher les statistiques avec les graphiques statiques
+
+# Route pour afficher les statistiques avec les nouveaux graphiques par jour et par heure
 @app.route('/statistics')
 def statistics():
     df = load_log_data()
-    scans_per_place, scans_per_hour, scans_per_ip = analyze_data(df)
-    plot_scans_per_place(scans_per_place)
-    plot_scans_per_hour(scans_per_hour)
-    return render_template('statistics.html')
+
+    # Scans par jour
+    df['Scan Date'] = df['Scan Time'].dt.date
+    scans_per_day = df.groupby('Scan Date').size().reset_index(name='Nombre de scans')
+
+    # Scans par heure
+    df['Scan Hour'] = df['Scan Time'].dt.hour
+    scans_per_hour = df.groupby('Scan Hour').size().reset_index(name='Nombre de scans')
+
+    # Création du graphique pour les scans par jour
+    fig_day = px.bar(scans_per_day, x='Scan Date', y='Nombre de scans', title='Nombre de scans par jour')
+    graph_day_html = pio.to_html(fig_day, full_html=False)
+
+    # Création du graphique pour les scans par heure
+    fig_hour = px.bar(scans_per_hour, x='Scan Hour', y='Nombre de scans', title='Distribution des scans par heure')
+    graph_hour_html = pio.to_html(fig_hour, full_html=False)
+
+    return render_template('statistics.html', graph_day_html=graph_day_html, graph_hour_html=graph_hour_html)
+
 
 # Fonction pour enregistrer les données dans un fichier CSV
-def log_scan(place, ip_address, scan_time, web_site):
+def log_scan(place, scan_time, web_site):
     with open('scans_log.csv', mode='a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow([place, ip_address, scan_time, web_site])
+        writer.writerow([place, scan_time, web_site])
+
+@app.route('/recap', methods=['GET', 'POST'])
+def recap():
+    df = load_log_data()
+
+    # Liste complète des sites web pour les filtres
+    all_websites = df['Website'].unique()
+
+    selected_website = None
+
+    # Initialiser le tableau récapitulatif vide
+    recap_table = pd.DataFrame()
+
+    if request.method == 'POST':
+        # Récupérer le site web sélectionné
+        selected_website = request.form.get('website')
+
+        # Filtrer le DataFrame en fonction du site web sélectionné
+        if selected_website:
+            df_filtered = df[df['Website'] == selected_website]
+
+            # Compter le nombre de scans par lieu
+            recap_table = df_filtered.groupby('Place').size().reset_index(name='Nombre de scans')
+
+            # Ajouter une ligne de total avec pd.concat
+            total_scans = recap_table['Nombre de scans'].sum()
+            total_row = pd.DataFrame({'Place': ['Total'], 'Nombre de scans': [total_scans]})
+            recap_table = pd.concat([recap_table, total_row], ignore_index=True)
+
+    # Convertir le tableau récapitulatif en HTML
+    recap_html = recap_table.to_html(classes='table table-striped table-bordered', index=False)
+
+    return render_template('recap.html', all_websites=all_websites, recap_html=recap_html, selected_website=selected_website)
+
+
+@app.route('/download_recap_csv', methods=['POST'])
+def download_recap_csv():
+    df = load_log_data()
+
+    # Filtrer selon le site web sélectionné
+    selected_website = request.form.get('website')
+
+    # Récupérer les données filtrées
+    if selected_website:
+        df_filtered = df[df['Website'] == selected_website]
+        recap_table = df_filtered.groupby('Place').size().reset_index(name='Nombre de scans')
+
+        # Ajouter la ligne de total
+        total_scans = recap_table['Nombre de scans'].sum()
+        total_row = pd.DataFrame({'Place': ['Total'], 'Nombre de scans': [total_scans]})
+        recap_table = pd.concat([recap_table, total_row], ignore_index=True)
+
+        # Générer le CSV
+        response = make_response(recap_table.to_csv(index=False))
+        response.headers["Content-Disposition"] = "attachment; filename=recap_table.csv"
+        response.headers["Content-Type"] = "text/csv"
+
+        return response
+
+
+@app.route('/download_recap_excel', methods=['POST'])
+def download_recap_excel():
+    df = load_log_data()
+
+    # Filtrer selon le site web sélectionné
+    selected_website = request.form.get('website')
+
+    # Récupérer les données filtrées
+    if selected_website:
+        df_filtered = df[df['Website'] == selected_website]
+        recap_table = df_filtered.groupby('Place').size().reset_index(name='Nombre de scans')
+
+        # Ajouter la ligne de total
+        total_scans = recap_table['Nombre de scans'].sum()
+        total_row = pd.DataFrame({'Place': ['Total'], 'Nombre de scans': [total_scans]})
+        recap_table = pd.concat([recap_table, total_row], ignore_index=True)
+
+        # Créer le fichier Excel
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            recap_table.to_excel(writer, index=False)
+
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers["Content-Disposition"] = "attachment; filename=recap_table.xlsx"
+        response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+        return response
 
 @app.route('/dynamic_stats', methods=['GET', 'POST'])
 def dynamic_stats():
@@ -165,11 +323,10 @@ def index():
 @app.route('/tracker', methods=['GET'])
 def tracker():
     place = request.args.get('place')
-    ip_address = request.remote_addr
     scan_time = datetime.datetime.now()
     redirect_url = request.args.get('redirect')
-    log_scan(place, ip_address, scan_time, redirect_url)
-    return redirect("http://" + redirect_url, code=302)
+    log_scan(place, scan_time, redirect_url)
+    return redirect("http://www." + redirect_url, code=302)
 
 # Fonction pour créer un PDF
 def create_pdf(place, img_data, base_url):
