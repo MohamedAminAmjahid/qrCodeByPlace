@@ -39,7 +39,7 @@
             <img src="/static/digital_logo_endossement_rvb_transparent.png" alt="Logo Université d'Évry" style="width: 150px;">
         </div>
         <h1 class="text-center mb-4">Générateur de QR Codes</h1>
-        <form action="/" method="post">
+        <form action="/" method="post" enctype="multipart/form-data">
             <div class="mb-3">
                 <label for="base_url" class="form-label">Entrez le lien de base :</label>
                 <input type="text" id="base_url" name="base_url" class="form-control" placeholder="example.com" required>
@@ -70,6 +70,20 @@
                     <option value="400">400 x 400</option>
                 </select>
             </div>
+            <div class="mb-3">
+                <label for="qr_format" class="form-label">Choisissez le format du QR code :</label>
+                <select id="qr_format" name="qr_format" class="form-control">
+                    <option value="square">Carrée</option>
+                    <option value="round">Rond</option>
+                </select>
+            </div>
+            
+            <!-- Nouveau champ pour télécharger un logo -->
+            <div class="mb-3">
+                <label for="logo" class="form-label">Télécharger un logo (facultatif) :</label>
+                <input type="file" id="logo" name="logo" class="form-control">
+            </div>
+
 
             <div class="text-center">
                 <button type="submit" class="btn btn-primary btn-lg">Générer les QR Codes</button>

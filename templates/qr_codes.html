@@ -41,21 +41,22 @@
 
         <!-- Grille pour afficher les QR codes -->
         <div class="row">
-            {% for place, img_base64, pdf_file in qr_codes %}
+            {% for place, img_base64 in qr_codes %}
+
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
                     <div class="card-body text-center">
                         <h5 class="card-title">{{ place }}</h5>
                         <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code pour {{ place }}" class="img-fluid">
                         <br>
-                        <!-- Icône de téléchargement à côté du QR code -->
                         <a href="{{ url_for('download_pdf', filename=pdf_file) }}" class="btn btn-link">
-                            <i class="bi bi-download"></i> Télécharger
+                            <i class="bi bi-download"></i> Télécharger PDF
                         </a>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+        {% endfor %}
+
         </div>
 
         <!-- Bouton retour -->

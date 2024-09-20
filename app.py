@@ -11,10 +11,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.io as pio
+from datetime import datetime
+from PIL import Image, ImageDraw
 
 app = Flask(__name__)
 
-from datetime import datetime
 
 @app.route('/download_filtered_csv', methods=['POST'])
 def download_filtered_csv():
@@ -36,7 +37,7 @@ def download_filtered_csv():
     response = make_response(df_filtered.to_csv(index=False))
     response.headers["Content-Disposition"] = "attachment; filename=tableau_filtre.csv"
     response.headers["Content-Type"] = "text/csv"
-    
+
     return response
 
 @app.route('/download_filtered_excel', methods=['POST'])
@@ -64,7 +65,7 @@ def download_filtered_excel():
     response = make_response(output.getvalue())
     response.headers["Content-Disposition"] = "attachment; filename=tableau_filtre.xlsx"
     response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    
+
     return response
 
 # Charger les logs du fichier CSV
@@ -276,48 +277,168 @@ def generate_qr_code(data, fill_color, back_color, size):
     img = qr.make_image(fill_color=fill_color, back_color=back_color).resize((size, size))
     return img
 
-# Générer les graphiques statiques
+
+def generate_qr_code_with_logo(data, fill_color, back_color, size, logo_path, is_round=False):
+    # Créer le QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,  # Correction d'erreur élevée pour supporter le logo
+        box_size=size // 40,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color=fill_color, back_color=back_color).convert('RGB')
+
+    # Redimensionner le QR code
+    img = img.resize((size, size))
+
+    # Ouvrir le logo
+    logo = Image.open(logo_path)
+
+    # Redimensionner le logo pour qu'il s'adapte au QR code (environ 20% de la taille du QR code)
+    logo_size = int(size * 0.2)
+    logo = logo.resize((logo_size, logo_size), Image.LANCZOS)
+
+    # Calculer la position centrale pour le logo
+    pos = ((img.size[0] - logo_size) // 2, (img.size[1] - logo_size) // 2)
+
+    # Ajouter le logo au centre du QR code
+    img.paste(logo, pos, logo if logo.mode == 'RGBA' else None)
+
+    # Si le format est rond, appliquer le masque circulaire
+    if is_round:
+        bigsize = (img.size[0] * 3, img.size[1] * 3)
+        mask = Image.new("L", bigsize, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0) + bigsize, fill=255)
+        mask = mask.resize(img.size, Image.LANCZOS)  # Utilise LANCZOS pour redimensionner le masque
+
+        # Appliquer le masque circulaire au QR code
+        img.putalpha(mask)
+
+        # Créer un fond blanc derrière le QR code rond
+        background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+        background.paste(img, (0, 0), img)
+
+        return background
+
+    return img
+
+# def generate_qr_code_with_logo(data, fill_color, back_color, size, logo_path):
+#     # Créer le QR code
+#     qr = qrcode.QRCode(
+#         version=1,
+#         error_correction=qrcode.constants.ERROR_CORRECT_H,  # Correction d'erreur élevée pour supporter le logo
+#         box_size=size // 40,
+#         border=4,
+#     )
+#     qr.add_data(data)
+#     qr.make(fit=True)
+#     img = qr.make_image(fill_color=fill_color, back_color=back_color).convert('RGB')
+
+#     # Ouvrir le logo
+#     logo = Image.open(logo_path)
+
+#     # Redimensionner le logo pour qu'il s'adapte au QR code
+#     logo_size = int(size * 0.2)
+#     logo = logo.resize((logo_size, logo_size))
+
+#     # Calculer la position centrale pour le logo
+#     pos = ((img.size[0] - logo_size) // 2, (img.size[1] - logo_size) // 2)
+
+#     # Ajouter le logo au centre du QR code
+#     img.paste(logo, pos)
+
+#     return img
+
+def generate_qr_code_round_only(data, fill_color, back_color, size):
+    # Créer le QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,  # Correction d'erreur élevée
+        box_size=size // 40,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color=fill_color, back_color=back_color).convert('RGB')
+
+    # Redimensionner le QR code
+    img = img.resize((size, size))
+
+    # Créer un masque circulaire
+    bigsize = (img.size[0] * 3, img.size[1] * 3)
+    mask = Image.new("L", bigsize, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0) + bigsize, fill=255)
+    mask = mask.resize(img.size, Image.LANCZOS)  # Utilise LANCZOS pour redimensionner le masque
+
+    # Appliquer le masque circulaire au QR code
+    img.putalpha(mask)
+
+    # Créer un fond blanc derrière le QR code rond
+    background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+    background.paste(img, (0, 0), img)
+
+    return background
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    try:
-        if request.method == 'POST':
-            redirect_url = request.form['base_url']
-            places = request.form['places'].splitlines()
+    if request.method == 'POST':
+        redirect_url = request.form['base_url']
+        places = request.form['places'].splitlines()
 
-            use_default_colors = 'use_default_colors' in request.form
-            if use_default_colors:
-                fill_color = "#30B4CD"
-                back_color = "#FEB30E"
-            else:
-                fill_color = request.form['fill_color']
-                back_color = request.form['back_color']
+        use_default_colors = 'use_default_colors' in request.form
+        if use_default_colors:
+            fill_color = "#30B4CD"
+            back_color = "#FEB30E"
+        else:
+            fill_color = request.form['fill_color']
+            back_color = request.form['back_color']
 
-            size = int(request.form['size'])
+        size = int(request.form['size'])
+        qr_format = request.form['qr_format']  # Récupérer le format choisi (carré/rond)
 
-            qr_codes = []
-            for place in places:
-                full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
+        # Vérifiez si un logo a été téléchargé
+        logo = request.files['logo']
+        logo_path = None
 
-                img = generate_qr_code(full_url, fill_color, back_color, size)
+        # Si un logo a été téléchargé, enregistrez-le temporairement
+        if logo and logo.filename != '':
+            logo_path = os.path.join('static', logo.filename)
+            logo.save(logo_path)
 
-                img_io = BytesIO()
-                img.save(img_io, 'PNG')
-                img_io.seek(0)
+        qr_codes = []
+        for place in places:
+            full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
 
-                img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+            # Cas pour carré ou rond
+            if qr_format == 'round':  # Si le format est rond
+                if logo_path:  # QR code rond avec logo
+                    img = generate_qr_code_with_logo(full_url, fill_color, back_color, size, logo_path, is_round=True)
+                else:  # QR code rond sans logo
+                    img = generate_qr_code_round_only(full_url, fill_color, back_color, size)
+            else:  # Carré par défaut (avec ou sans logo)
+                if logo_path:  # Carré avec logo
+                    img = generate_qr_code_with_logo(full_url, fill_color, back_color, size, logo_path)
+                else:  # Carré sans logo
+                    img = generate_qr_code(full_url, fill_color, back_color, size)
 
-                # Créer le PDF
-                pdf_filename = create_pdf(place.strip(), img_base64, full_url)
+            img_io = BytesIO()
+            img.save(img_io, 'PNG')
+            img_io.seek(0)
 
-                # Ajouter le QR code et le fichier PDF
-                qr_codes.append((place, img_base64, pdf_filename))
+            img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+            qr_codes.append((place, img_base64))
 
-            return render_template('qr_codes.html', qr_codes=qr_codes)
+        # Si un logo a été utilisé, vous pouvez le supprimer après l'utilisation
+        if logo_path:
+            os.remove(logo_path)
 
-        return render_template('index.html')
-    except Exception as e:
-        print(f"Une erreur est survenue : {str(e)}")
-        return f"Une erreur est survenue : {str(e)}", 500
+        return render_template('qr_codes.html', qr_codes=qr_codes)
+
+    return render_template('index.html')
 
 # Route pour capturer les scans des QR codes
 @app.route('/tracker', methods=['GET'])
@@ -610,10 +731,10 @@ if __name__ == '__main__':
 # def load_log_data():
 #     # Charger les données du fichier CSV dans un DataFrame
 #     df = pd.read_csv('scans_log.csv', names=['Place', 'IP Address', 'Scan Time', 'Website'])
-    
+
 #     # Convertir la colonne "Scan Time" en format datetime
 #     df['Scan Time'] = pd.to_datetime(df['Scan Time'])
-    
+
 #     return df
 
 
@@ -767,25 +888,25 @@ if __name__ == '__main__':
 
 #     # Définir la police pour le titre
 #     pdf.set_font("Arial", size=12)
-    
+
 #     # Centrer le texte du titre (largeur de la page = 210mm, donc centrer sur 200mm)
 #     pdf.cell(200, 10, txt=f"QR Code pour le lieu: {place}", ln=True, align="C")
-    
+
 #     # Sauvegarder l'image temporairement pour l'insérer dans le PDF
 #     img_path = f"temp_{place}.png"
 #     with open(img_path, "wb") as img_file:
 #         img_file.write(base64.b64decode(img_data))
-    
+
 #     pdf.ln(100)
-    
+
 #     # Ajouter l'image du QR code au PDF et la centrer
 #     # On peut ajuster les positions 'x' et 'y' pour centrer l'image (largeur de la page = 210mm)
 #     pdf.image(img_path, x=(210-100)/2, y=30, w=100, h=100)
 
 #     # Sauter quelques lignes avant d'ajouter le lien
 #     pdf.ln(100)
-    
-    
+
+
 #     # Ajouter le lien en dessous du QR code et le centrer
 #     pdf.cell(200, 10, txt=f"Lien associé: {base_url}", ln=True, align="C")
 
@@ -904,7 +1025,7 @@ if __name__ == '__main__':
 # def create_pdf(place, img_data, base_url):
 #     pdf = FPDF()
 #     pdf.add_page()
-    
+
 #     # Ajouter le titre
 #     pdf.set_font("Arial", size=12)
 #     pdf.cell(200, 10, txt=f"QR Code pour le lieu: {place}", ln=True, align="C")
@@ -913,7 +1034,7 @@ if __name__ == '__main__':
 #     img_path = f"temp_{place}.png"
 #     with open(img_path, "wb") as img_file:
 #         img_file.write(base64.b64decode(img_data))
-    
+
 #     # Ajouter l'image du QR code au PDF
 #     pdf.image(img_path, x=10, y=20, w=100, h=100)
 
@@ -927,7 +1048,7 @@ if __name__ == '__main__':
 
 #     # Supprimer l'image temporaire
 #     os.remove(img_path)
-    
+
 #     return pdf_filename
 # # Route pour télécharger un PDF
 # @app.route('/download/<filename>')
