@@ -265,6 +265,18 @@ def dynamic_stats():
                            start_date=start_date, end_date=end_date)
 
 # Fonction pour générer un QR code avec des couleurs personnalisées
+# def generate_qr_code(data, fill_color, back_color, size):
+#     qr = qrcode.QRCode(
+#         version=1,
+#         error_correction=qrcode.constants.ERROR_CORRECT_L,
+#         box_size=size // 40,
+#         border=4,
+#     )
+#     qr.add_data(data)
+#     qr.make(fit=True)
+#     img = qr.make_image(fill_color=fill_color, back_color=back_color).resize((size, size))
+#     return img
+
 def generate_qr_code(data, fill_color, back_color, size):
     qr = qrcode.QRCode(
         version=1,
@@ -274,9 +286,12 @@ def generate_qr_code(data, fill_color, back_color, size):
     )
     qr.add_data(data)
     qr.make(fit=True)
-    img = qr.make_image(fill_color=fill_color, back_color=back_color).resize((size, size))
+    
+    # Create the image with the given colors
+    img = qr.make_image(fill_color=fill_color, back_color=back_color)
+    img = img.resize((size, size))
+    
     return img
-
 
 def generate_qr_code_with_logo(data, fill_color, back_color, size, logo_path, is_round=False):
     # Créer le QR code
@@ -384,6 +399,7 @@ def generate_qr_code_round_only(data, fill_color, back_color, size):
     return background
 
 @app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         redirect_url = request.form['base_url']
@@ -410,6 +426,8 @@ def index():
             logo.save(logo_path)
 
         qr_codes = []
+        pdf_files = []  # List to store the generated PDF filenames
+
         for place in places:
             full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
 
@@ -432,13 +450,76 @@ def index():
             img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
             qr_codes.append((place, img_base64))
 
+            # Generate PDF for this QR code
+            pdf_filename = create_pdf(place, img_base64, redirect_url)
+            pdf_files.append(pdf_filename)  # Add the filename to the list
+
+        # Zip the QR codes and PDF files together and pass it to the template
+        qr_code_pdf_pairs = zip(qr_codes, pdf_files)
+
         # Si un logo a été utilisé, vous pouvez le supprimer après l'utilisation
         if logo_path:
             os.remove(logo_path)
 
-        return render_template('qr_codes.html', qr_codes=qr_codes)
+        return render_template('qr_codes.html', qr_code_pdf_pairs=qr_code_pdf_pairs)
 
     return render_template('index.html')
+
+# def index():
+#     if request.method == 'POST':
+#         redirect_url = request.form['base_url']
+#         places = request.form['places'].splitlines()
+
+#         use_default_colors = 'use_default_colors' in request.form
+#         if use_default_colors:
+#             fill_color = "#30B4CD"
+#             back_color = "#FEB30E"
+#         else:
+#             fill_color = request.form['fill_color']
+#             back_color = request.form['back_color']
+
+#         size = int(request.form['size'])
+#         qr_format = request.form['qr_format']  # Récupérer le format choisi (carré/rond)
+
+#         # Vérifiez si un logo a été téléchargé
+#         logo = request.files['logo']
+#         logo_path = None
+
+#         # Si un logo a été téléchargé, enregistrez-le temporairement
+#         if logo and logo.filename != '':
+#             logo_path = os.path.join('static', logo.filename)
+#             logo.save(logo_path)
+
+#         qr_codes = []
+#         for place in places:
+#             full_url = f"{request.host_url}tracker?place={place.strip()}&redirect={redirect_url}"
+
+#             # Cas pour carré ou rond
+#             if qr_format == 'round':  # Si le format est rond
+#                 if logo_path:  # QR code rond avec logo
+#                     img = generate_qr_code_with_logo(full_url, fill_color, back_color, size, logo_path, is_round=True)
+#                 else:  # QR code rond sans logo
+#                     img = generate_qr_code_round_only(full_url, fill_color, back_color, size)
+#             else:  # Carré par défaut (avec ou sans logo)
+#                 if logo_path:  # Carré avec logo
+#                     img = generate_qr_code_with_logo(full_url, fill_color, back_color, size, logo_path)
+#                 else:  # Carré sans logo
+#                     img = generate_qr_code(full_url, fill_color, back_color, size)
+
+#             img_io = BytesIO()
+#             img.save(img_io, 'PNG')
+#             img_io.seek(0)
+
+#             img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+#             qr_codes.append((place, img_base64))
+
+#         # Si un logo a été utilisé, vous pouvez le supprimer après l'utilisation
+#         if logo_path:
+#             os.remove(logo_path)
+
+#         return render_template('qr_codes.html', qr_codes=qr_codes)
+
+#     return render_template('index.html')
 
 # Route pour capturer les scans des QR codes
 @app.route('/tracker', methods=['GET'])

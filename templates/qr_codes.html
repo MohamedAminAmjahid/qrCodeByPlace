@@ -40,24 +40,23 @@
         <h1 class="text-center mb-4">QR Codes générés</h1>
 
         <!-- Grille pour afficher les QR codes -->
-        <div class="row">
-            {% for place, img_base64 in qr_codes %}
-
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">{{ place }}</h5>
-                        <img src="data:image/png;base64,{{ img_base64 }}" alt="QR Code pour {{ place }}" class="img-fluid">
-                        <br>
-                        <a href="{{ url_for('download_pdf', filename=pdf_file) }}" class="btn btn-link">
-                            <i class="bi bi-download"></i> Télécharger PDF
-                        </a>
-                    </div>
+<div class="row">
+    {% for (qr_code, pdf_file) in qr_code_pdf_pairs %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ qr_code[0] }}</h5> <!-- Place -->
+                    <img src="data:image/png;base64,{{ qr_code[1] }}" alt="QR Code pour {{ qr_code[0] }}" class="img-fluid"> <!-- QR Code image -->
+                    <br>
+                    <a href="{{ url_for('download_pdf', filename=pdf_file) }}" class="btn btn-link">
+                        <i class="bi bi-download"></i> Télécharger PDF
+                    </a>
                 </div>
             </div>
-        {% endfor %}
-
         </div>
+    {% endfor %}
+</div>
+
 
         <!-- Bouton retour -->
         <div class="text-center mt-4">

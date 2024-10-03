@@ -40,6 +40,9 @@
         </div>
         <h1 class="text-center mb-4">Générateur de QR Codes</h1>
         <form action="/" method="post" enctype="multipart/form-data">
+            <div id="customColorFields"></div> <!-- Zone pour les champs personnalisés -->
+
+            
             <div class="mb-3">
                 <label for="base_url" class="form-label">Entrez le lien de base :</label>
                 <input type="text" id="base_url" name="base_url" class="form-control" placeholder="example.com" required>
@@ -62,6 +65,10 @@
                 <label for="back_color" class="form-label">Couleur de fond du QR code :</label>
                 <input type="color" id="back_color" name="back_color" class="form-control" value="#ffffff">
             </div>
+
+            <!-- Bouton pour ajouter/cacher les champs de couleur
+            <button type="button" class="btn btn-secondary mb-3" onclick="toggleCustomColorFields()">Ajouter des couleurs personnalisées (hex)</button>
+             -->
             <div class="mb-3">
                 <label for="size" class="form-label">Choisissez la taille du QR code :</label>
                 <select id="size" name="size" class="form-control">
@@ -70,6 +77,13 @@
                     <option value="400">400 x 400</option>
                 </select>
             </div>
+            
+            <!-- Nouveau champ pour télécharger un logo -->
+            <div class="mb-3">
+                <label for="logo" class="form-label">Choisir un fichier de vote Logo</label>
+                <input type="file" id="logo" name="logo" class="form-control">
+            </div>
+
             <div class="mb-3">
                 <label for="qr_format" class="form-label">Choisissez le format du QR code :</label>
                 <select id="qr_format" name="qr_format" class="form-control">
@@ -77,13 +91,6 @@
                     <option value="round">Rond</option>
                 </select>
             </div>
-            
-            <!-- Nouveau champ pour télécharger un logo -->
-            <div class="mb-3">
-                <label for="logo" class="form-label">Télécharger un logo (facultatif) :</label>
-                <input type="file" id="logo" name="logo" class="form-control">
-            </div>
-
 
             <div class="text-center">
                 <button type="submit" class="btn btn-primary btn-lg">Générer les QR Codes</button>
@@ -92,5 +99,50 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let customColorFieldsVisible = false;
+
+        function toggleCustomColorFields() {
+            const customColorContainer = document.getElementById('customColorFields');
+
+            if (!customColorFieldsVisible) {
+                // Créer les champs de texte pour les couleurs personnalisées
+                var fillColorLabel = document.createElement('label');
+                fillColorLabel.classList.add('form-label');
+                fillColorLabel.textContent = "Code couleur de remplissage (hex)";
+                
+                var fillColorInput = document.createElement('input');
+                fillColorInput.type = 'text';
+                fillColorInput.classList.add('form-control');
+                fillColorInput.name = 'custom_fill_color';
+                fillColorInput.placeholder = "#000000";
+
+                var backColorLabel = document.createElement('label');
+                backColorLabel.classList.add('form-label');
+                backColorLabel.textContent = "Code couleur de fond (hex)";
+                
+                var backColorInput = document.createElement('input');
+                backColorInput.type = 'text';
+                backColorInput.classList.add('form-control');
+                backColorInput.name = 'custom_back_color';
+                backColorInput.placeholder = "#FFFFFF";
+
+                // Ajouter les champs à la zone
+                customColorContainer.appendChild(fillColorLabel);
+                customColorContainer.appendChild(fillColorInput);
+                customColorContainer.appendChild(backColorLabel);
+                customColorContainer.appendChild(backColorInput);
+
+                customColorFieldsVisible = true; // Indiquer que les champs sont visibles
+            } else {
+                // Si les champs sont visibles, les retirer
+                while (customColorContainer.firstChild) {
+                    customColorContainer.removeChild(customColorContainer.firstChild);
+                }
+                customColorFieldsVisible = false; // Indiquer que les champs sont cachés
+            }
+        }
+    </script>
 </body>
 </html>
