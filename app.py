@@ -671,9 +671,6 @@ def download_png(place):
 # Route pour capturer les scans des QR codes
 @app.route('/tracker', methods=['GET'])
 def tracker():
-    if not cas.username:  # Vérifie si l'utilisateur est connecté
-        return redirect(url_for('login'))  # Redirige vers la page de connexion CAS
-
     place = request.args.get('place')
     scan_time = datetime.datetime.now()
     redirect_url = request.args.get('redirect')
