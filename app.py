@@ -672,7 +672,7 @@ def download_png(place):
 @app.route('/tracker', methods=['GET'])
 def tracker():
     place = request.args.get('place')
-    scan_time = datetime.datetime.now()
+    scan_time = datetime.now()
     redirect_url = request.args.get('redirect')
     log_scan(place, scan_time, redirect_url)
     return redirect("http://www." + redirect_url, code=302)
