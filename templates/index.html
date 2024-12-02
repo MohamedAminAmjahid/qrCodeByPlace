@@ -26,7 +26,7 @@
                         <a class="nav-link" href="/dynamic_stats">Statistiques dynamiques</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/recap">Tableau Récapitulatif</a>
+                        <a class="nav-link" href="/logout">Déconnexion</a>
                     </li>
                 </ul>
             </div>
@@ -65,6 +65,12 @@
                 <label for="back_color" class="form-label">Couleur de fond du QR code :</label>
                 <input type="color" id="back_color" name="back_color" class="form-control" value="#ffffff">
             </div>
+            <!-- transparent -->
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="transparent_bg" name="transparent_bg">
+                <label class="form-check-label" for="transparent_bg">Utiliser un fond transparent</label>
+            </div>
+            
 
             <!-- Bouton pour ajouter/cacher les champs de couleur
             <button type="button" class="btn btn-secondary mb-3" onclick="toggleCustomColorFields()">Ajouter des couleurs personnalisées (hex)</button>

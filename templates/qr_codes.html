@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Codes générés</title>
-    <!-- Lien vers Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Lien vers Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Barre de navigation avec les liens vers les différentes pages -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">QR Code Generator</a>
@@ -31,6 +28,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/recap">Tableau Récapitulatif</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Déconnexion</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -39,32 +39,38 @@
     <div class="container mt-5">
         <h1 class="text-center mb-4">QR Codes générés</h1>
 
-        <!-- Grille pour afficher les QR codes -->
-<div class="row">
-    {% for (qr_code, pdf_file) in qr_code_pdf_pairs %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <h5 class="card-title">{{ qr_code[0] }}</h5> <!-- Place -->
-                    <img src="data:image/png;base64,{{ qr_code[1] }}" alt="QR Code pour {{ qr_code[0] }}" class="img-fluid"> <!-- QR Code image -->
-                    <br>
-                    <a href="{{ url_for('download_pdf', filename=pdf_file) }}" class="btn btn-link">
-                        <i class="bi bi-download"></i> Télécharger PDF
-                    </a>
+        {% if qr_code_pdf_pairs|length > 0 %}
+        <div class="row">
+            {% for qr_code, pdf_file in qr_code_pdf_pairs %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ qr_code[0] }}</h5>
+                            <img src="data:image/png;base64,{{ qr_code[1] }}" alt="QR Code pour {{ qr_code[0] }}" class="img-fluid mb-3">
+                            <a href="{{ url_for('download_pdf', filename=pdf_file) }}" class="btn btn-primary mb-2">
+                                <i class="bi bi-download"></i> Télécharger PDF
+                            </a>
+                            <a href="{{ url_for('download_png', place=qr_code[0]) }}" class="btn btn-secondary">
+                                <i class="bi bi-download"></i> Télécharger PNG
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            {% endfor %}
         </div>
-    {% endfor %}
-</div>
+        
+        
+        {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            Aucun QR Code n'a été généré. Veuillez vérifier les paramètres ou réessayer.
+        </div>
+        {% endif %}
 
-
-        <!-- Bouton retour -->
         <div class="text-center mt-4">
             <a href="/" class="btn btn-primary btn-lg">Retour</a>
         </div>
     </div>
 
-    <!-- Lien vers Bootstrap JS (facultatif) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
