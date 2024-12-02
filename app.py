@@ -441,7 +441,22 @@ def generate_qr_code_with_logo(data, fill_color, back_color, size, logo_path, is
         img = make_transparent(img)
 
     return img
+def apply_round_mask(img):
+    """
+    Applique un masque circulaire à une image pour rendre les bords ronds.
+    """
+    # Créer une nouvelle image de la même taille que l'image originale, avec un canal alpha
+    size = img.size
+    mask = Image.new('L', size, 0)  # 'L' pour un masque en niveaux de gris
 
+    # Dessiner un cercle blanc au centre du masque
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0, size[0], size[1]), fill=255)
+
+    # Ajouter le masque à l'image originale
+    img.putalpha(mask)
+
+    return img
 def generate_qr_code_round_only(data, fill_color, back_color, size):
     if not cas.username:  # Vérifie si l'utilisateur est connecté
         return redirect(url_for('login'))  # Redirige vers la page de connexion CAS
